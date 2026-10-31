@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-blackbox"
+version = "0.1.0"
+description = "Record, replay, and fork checkpointable AI workflows locally."
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.10,<3"]
+license = "MIT"
+readme = "README.md"
+authors = [{name = "Mel Goldstein"}]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.11", "build>=1.2"]
+openai = ["openai>=1.68,<3"]
+
+[project.scripts]
+blackbox = "agent_blackbox.cli:main"
+
+[project.urls]
+Repository = "https://github.com/melgoldstein/agent-blackbox"
+Issues = "https://github.com/melgoldstein/agent-blackbox/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_blackbox"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
