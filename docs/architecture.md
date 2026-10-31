@@ -36,7 +36,7 @@ The registered inventory workflow has one checkpoint. Additional workflows can r
 
 ## Comparison
 
-Comparison removes span envelopes and compares remaining events positionally, ignoring timing, origin labels, and generated IDs. It reports changed names, kinds, arguments, results, statuses, and errors. This is an ordered structural diff, not causal attribution. For a fork from a later checkpoint, compare the equivalent suffix when interpreting differences; the CLI currently displays the unmatched prefix as differences. Branch alignment is future work.
+Comparison removes span envelopes and compares remaining events positionally, ignoring timing, origin labels, and generated IDs. It reports changed names, kinds, arguments, results, statuses, and errors. For a direct parent/child fork it aligns the parent suffix using the child's stored fork_checkpoint sequence. This is an ordered structural diff, not causal attribution. Arbitrary branch alignment between unrelated runs is not implemented.
 
 ## Security boundary
 

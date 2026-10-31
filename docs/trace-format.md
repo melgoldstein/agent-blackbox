@@ -2,7 +2,7 @@
 
 `blackbox export RUN_ID` writes a single JSON object validated by `Run` and `Event` in `schema.py`. It contains no executable code. Import is not currently implemented.
 
-Run fields: `schema_version`, `id`, `name`, `parent_run`, `workflow`, `workflow_version`, `policy`, `created_at`, `status`, `events`.
+Run fields: `schema_version`, `id`, `name`, `parent_run`, `fork_checkpoint`, `workflow`, `workflow_version`, `policy`, `created_at`, `status`, `events`. The optional `fork_checkpoint` is a sequence number in the parent run, identifying the restored state and comparison suffix.
 
 `schema_version` must be 1. IDs are UUID4 hex strings. `created_at` is timezone-aware UTC ISO 8601. Policy is `record`, `offline`, or `fork`; status is `running`, `ok`, `error`, or `cancelled`. `ok` means the program completed, not that its business decision was correct.
 

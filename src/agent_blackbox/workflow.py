@@ -135,6 +135,7 @@ def execute(store: Store, run_id: str, replacement: tuple[int, Any] | None = Non
             "Redacted traces support playback only; original inputs cannot be recovered"
         )
     state = workflow.initial_state()
+    checkpoint_seq = None
     if replacement:
         target = next((event for event in responses if event.seq == replacement[0]), None)
         if target is None:
@@ -147,6 +148,7 @@ def execute(store: Store, run_id: str, replacement: tuple[int, Any] | None = Non
         if not checkpoints:
             raise BlackboxError("No checkpoint precedes this response")
         checkpoint = checkpoints[-1]
+        checkpoint_seq = checkpoint.seq
         state = deepcopy(checkpoint.result)
         responses = [event for event in responses if event.seq > checkpoint.seq]
     with Recorder(
@@ -155,6 +157,7 @@ def execute(store: Store, run_id: str, replacement: tuple[int, Any] | None = Non
         workflow=workflow.name,
         workflow_version=workflow.version,
         parent_run=source.id,
+        fork_checkpoint=checkpoint_seq,
         policy="fork" if replacement else "offline",
     ) as recorder:
         io = RecordedIO(recorder, responses, replacement)
@@ -165,6 +168,8 @@ def execute(store: Store, run_id: str, replacement: tuple[int, Any] | None = Non
 
 def compare(left: Run, right: Run) -> dict:
     original = [event for event in left.events if event.kind != "span"]
+    if right.parent_run == left.id and right.fork_checkpoint is not None:
+        original = [event for event in original if event.seq >= right.fork_checkpoint]
     revised = [event for event in right.events if event.kind != "span"]
     changes = []
     for index in range(max(len(original), len(revised))):

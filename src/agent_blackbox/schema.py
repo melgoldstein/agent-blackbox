@@ -32,6 +32,7 @@ class Run(BaseModel):
     id: str
     name: str
     parent_run: str | None = None
+    fork_checkpoint: int | None = None
     workflow: str | None = None
     workflow_version: str | None = None
     policy: Literal["record", "offline", "fork"] = "record"

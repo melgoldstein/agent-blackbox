@@ -50,6 +50,7 @@ class Recorder:
         workflow: str | None = None,
         workflow_version: str | None = None,
         parent_run: str | None = None,
+        fork_checkpoint: int | None = None,
         policy: str = "record",
     ) -> None:
         self.store = store or Store()
@@ -59,6 +60,7 @@ class Recorder:
             id=uuid4().hex,
             name=self.redactor.clean(name),
             parent_run=parent_run,
+            fork_checkpoint=fork_checkpoint,
             workflow=workflow,
             workflow_version=workflow_version,
             policy=policy,

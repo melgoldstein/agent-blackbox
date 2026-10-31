@@ -8,6 +8,7 @@ from agent_blackbox import Recorder, Store
 from agent_blackbox.recorder import Redactor
 from agent_blackbox.schema import BlackboxError
 from agent_blackbox.workflow import RecordedIO, compare, demo, execute
+from agent_blackbox.workflow import WORKFLOWS
 
 
 @pytest.fixture
@@ -153,3 +154,40 @@ def test_model_capture_is_opt_in(store):
             input="hello",
         )
     assert store.load(recorder.run.id).events[0].usage["input_tokens"] == 3
+
+
+def test_custom_workflow_resumes_later_checkpoint(store, monkeypatch):
+    class TwoReads:
+        name = "two-reads"
+        version = "1"
+
+        def initial_state(self):
+            return {"step": 0, "total": 0}
+
+        def resume(self, state, io, recorder):
+            for step in range(state["step"], 2):
+                recorder.emit("checkpoint", f"before-{step}", state)
+                state["total"] += io.call("read", index=step)
+                state["step"] = step + 1
+            recorder.emit("decision", "total", state["total"])
+
+    workflow = TwoReads()
+    monkeypatch.setitem(WORKFLOWS, workflow.name, workflow)
+
+    class InitialIO:
+        def __init__(self, recorder):
+            self.recorder = recorder
+
+        def call(self, name, **arguments):
+            return self.recorder.call(name, lambda index: index + 1, **arguments)
+
+    with Recorder("custom", store=store, workflow=workflow.name, workflow_version="1") as recorder:
+        workflow.resume(workflow.initial_state(), InitialIO(recorder), recorder)
+    source = store.load(recorder.run.id)
+    child = execute(store, source.id, (4, 10))
+    assert child.fork_checkpoint == 3
+    assert child.events[-1].result == 11
+    assert source.events[-1].result == 3
+    difference = compare(source, child)
+    assert difference["first_divergence"]["original_event"] == 4
+    assert len(difference["changes"]) == 2
