@@ -10,6 +10,10 @@ def respond(*, model: str, input: str) -> dict[str, Any]:
     return {
         "text": response.output_text,
         "model": response.model,
-        "usage": {"input_tokens": response.usage.input_tokens,
-                  "output_tokens": response.usage.output_tokens} if response.usage else None,
+        "usage": {
+            "input_tokens": response.usage.input_tokens,
+            "output_tokens": response.usage.output_tokens,
+        }
+        if response.usage
+        else None,
     }

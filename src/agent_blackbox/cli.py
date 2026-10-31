@@ -32,6 +32,7 @@ def main() -> None:
         store = Store(arguments.db)
         if arguments.command == "serve":
             from .server import serve
+
             serve(store, arguments.port)
             return
         if arguments.command == "demo":
@@ -44,7 +45,9 @@ def main() -> None:
             result = execute(store, arguments.run_id).model_dump()
         elif arguments.command == "fork":
             response = json.loads(arguments.response.read_text(encoding="utf-8"))
-            result = execute(store, arguments.run_id, (arguments.replace_event, response)).model_dump()
+            result = execute(
+                store, arguments.run_id, (arguments.replace_event, response)
+            ).model_dump()
         else:
             result = compare(store.load(arguments.original), store.load(arguments.revised))
         print(json.dumps(result, indent=2, ensure_ascii=True))

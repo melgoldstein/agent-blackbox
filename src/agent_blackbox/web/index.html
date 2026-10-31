@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>agent-blackbox | Execution debugger</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><a class="skip" href="#workspace">Skip to trace</a>
+<header><a class="brand" href="/">[b] <strong>agent-blackbox</strong></a><span class="local">LOCAL EXECUTION LAB</span><button id="demo">Record demo</button></header>
+<div class="layout"><aside><div class="eyebrow">RECORDED SESSIONS</div><h2>Run library</h2><p class="muted">Every decision leaves a trace.</p><button id="refresh" class="quiet">Refresh runs</button><nav id="runs" aria-label="Recorded runs"></nav></aside>
+<main id="workspace"><div class="eyebrow">OBSERVE / REPLAY / INTERVENE</div><h1>Find the first divergence.</h1><p class="intro">Follow the evidence. Replace one response. See what changes.</p><div id="notice" role="status" aria-live="polite"></div>
+<section id="empty"><h2>No trace selected</h2><p>Record the inventory demo to investigate a stale stock response. No API key or network access required.</p></section>
+<div id="trace" hidden><div class="runhead"><div><h2 id="title"></h2><p id="metadata" class="mono muted"></p></div><button id="replay">Replay offline</button></div>
+<div class="metrics" id="metrics"></div><div class="toolbar"><h2>Execution waterfall</h2><label>Filter events <input id="search" type="search" placeholder="Tool, argument, result..."></label></div>
+<div class="legend"><span>recorded</span><span class="replayed">replayed</span><span class="replaced">replaced</span><span class="executed">executed</span></div><div id="events" aria-label="Execution events"></div>
+<div class="inspectgrid"><section><div class="eyebrow">EVENT INSPECTOR</div><h2 id="event-title">Select an event</h2><pre id="detail">Event payloads appear here.</pre></section><section><div class="eyebrow">CONTROLLED INTERVENTION</div><h2>Fork from checkpoint</h2><label>Checkpoint <select id="checkpoint"></select></label><label>Response event <select id="target"></select></label><label>Replacement JSON <textarea id="response" rows="7" spellcheck="false">{"sku":"PUMP-042","available":24,"age_hours":0}</textarea></label><p class="muted">Later responses are replayed. Local decisions execute again. No live tools are called.</p><button id="fork">Create fork and compare</button></section></div>
+<section id="comparison" hidden><div class="eyebrow">COUNTERFACTUAL COMPARISON</div><h2 id="diff-title"></h2><div id="diff"></div></section></div>
+<footer>Explicit checkpoints. Recorded evidence. No live fallback.</footer></main></div></body></html>

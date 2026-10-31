@@ -1,0 +1,17 @@
+{
+  "python": "3.12.14",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+  "samples": 500,
+  "warmup": 50,
+  "workload": "Synchronous in-memory lookup; recorded path includes two SQLite WAL commits per call; run setup excluded",
+  "baseline": {
+    "median_us": 0.1,
+    "p95_us": 0.2
+  },
+  "recorded": {
+    "median_us": 8794.75,
+    "p95_us": 9376.8
+  },
+  "median_added_us": 8794.65
+}

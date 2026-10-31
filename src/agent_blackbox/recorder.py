@@ -23,7 +23,10 @@ class Redactor:
 
     def clean(self, value: Any) -> Any:
         if isinstance(value, dict):
-            return {key: "[REDACTED]" if key.lower() in self.keys else self.clean(item) for key, item in value.items()}
+            return {
+                key: "[REDACTED]" if key.lower() in self.keys else self.clean(item)
+                for key, item in value.items()
+            }
         if isinstance(value, list):
             return [self.clean(item) for item in value]
         if isinstance(value, str):
@@ -37,16 +40,30 @@ class Redactor:
 
 
 class Recorder:
-    def __init__(self, name: str, *, store: Store | None = None, redactor: Redactor | None = None,
-                 capture_models: bool = False, workflow: str | None = None,
-                 workflow_version: str | None = None, parent_run: str | None = None,
-                 policy: str = "record") -> None:
+    def __init__(
+        self,
+        name: str,
+        *,
+        store: Store | None = None,
+        redactor: Redactor | None = None,
+        capture_models: bool = False,
+        workflow: str | None = None,
+        workflow_version: str | None = None,
+        parent_run: str | None = None,
+        policy: str = "record",
+    ) -> None:
         self.store = store or Store()
         self.redactor = redactor or Redactor()
         self.capture_models = capture_models
-        self.run = Run(id=uuid4().hex, name=self.redactor.clean(name), parent_run=parent_run,
-                       workflow=workflow, workflow_version=workflow_version, policy=policy,
-                       created_at=datetime.now(timezone.utc).isoformat())
+        self.run = Run(
+            id=uuid4().hex,
+            name=self.redactor.clean(name),
+            parent_run=parent_run,
+            workflow=workflow,
+            workflow_version=workflow_version,
+            policy=policy,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
         self._parent: ContextVar[int | None] = ContextVar(f"parent-{self.run.id}", default=None)
         self._lock = threading.Lock()
         self._sequence = 0
@@ -60,7 +77,9 @@ class Recorder:
         return self
 
     def __exit__(self, kind: Any, error: Any, traceback: Any) -> None:
-        self.run.status = "cancelled" if isinstance(error, asyncio.CancelledError) else "error" if error else "ok"
+        self.run.status = (
+            "cancelled" if isinstance(error, asyncio.CancelledError) else "error" if error else "ok"
+        )
         self.store.save_run(self.run)
         self._active = False
 
@@ -76,14 +95,22 @@ class Recorder:
         clean_arguments = self.redactor.snapshot(arguments)
         with self._lock:
             self._sequence += 1
-            event = Event(seq=self._sequence, parent=self._parent.get(), kind=kind,
-                          name=self.redactor.clean(name), arguments=clean_arguments,
-                          start_ns=time.time_ns(), origin=origin)
+            event = Event(
+                seq=self._sequence,
+                parent=self._parent.get(),
+                kind=kind,
+                name=self.redactor.clean(name),
+                arguments=clean_arguments,
+                start_ns=time.time_ns(),
+                origin=origin,
+            )
             self.store.save_event(self.run.id, event)
         return event
 
     @contextmanager
-    def _event(self, kind: str, name: str, arguments: Any = None, origin: str = "recorded") -> Iterator[Event]:
+    def _event(
+        self, kind: str, name: str, arguments: Any = None, origin: str = "recorded"
+    ) -> Iterator[Event]:
         event = self._begin(kind, name, arguments, origin)
         token = self._parent.set(event.seq)
         started = time.perf_counter_ns()
@@ -104,7 +131,9 @@ class Recorder:
 
     def call(self, name: str, function: Callable[..., T], **arguments: Any) -> T:
         if self.run.policy != "record":
-            raise BlackboxError("Live callbacks are blocked in replay/fork; use workflow RecordedIO")
+            raise BlackboxError(
+                "Live callbacks are blocked in replay/fork; use workflow RecordedIO"
+            )
         with self._event("tool", name, arguments) as event:
             result = function(**arguments)
             event.result = self.redactor.snapshot(result)
@@ -118,7 +147,9 @@ class Recorder:
             event.result = self.redactor.snapshot(result)
             return result
 
-    def emit(self, kind: str, name: str, result: Any, *, arguments: Any = None, origin: str = "executed") -> int:
+    def emit(
+        self, kind: str, name: str, result: Any, *, arguments: Any = None, origin: str = "executed"
+    ) -> int:
         with self._event(kind, name, arguments, origin) as event:
             event.result = self.redactor.snapshot(result)
             return event.seq

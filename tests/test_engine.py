@@ -47,28 +47,39 @@ def test_concurrent_runs(store):
 def test_async_tasks_and_cancellation(store):
     async def scenario():
         async with Recorder("async", store=store) as recorder:
+
             async def worker(index):
                 with recorder.span(f"task-{index}"):
                     return await recorder.acall("sleep", asyncio.sleep, delay=0.001, result=index)
+
             assert await asyncio.gather(*(worker(i) for i in range(8))) == list(range(8))
         events = store.load(recorder.run.id).events
         parents = {event.seq: event.name for event in events if event.kind == "span"}
-        assert all(parents[event.parent] == f"task-{event.result}" for event in events if event.kind == "tool")
+        assert all(
+            parents[event.parent] == f"task-{event.result}"
+            for event in events
+            if event.kind == "tool"
+        )
         cancelled = Recorder("cancelled", store=store)
         with pytest.raises(asyncio.CancelledError):
             async with cancelled:
+
                 async def stop():
                     raise asyncio.CancelledError()
+
                 await cancelled.acall("stop", stop)
         assert store.load(cancelled.run.id).status == "cancelled"
         assert store.load(cancelled.run.id).events[0].status == "cancelled"
+
     asyncio.run(scenario())
 
 
 def test_redaction_before_storage_including_exceptions(store):
     recorder = Recorder("private", store=store, redactor=Redactor(secrets=("sensitive-value",)))
+
     def fail(**arguments):
         raise RuntimeError("sensitive-value")
+
     with pytest.raises(RuntimeError):
         with recorder:
             recorder.call("fail", fail, api_key="never-store-this", note="sensitive-value")
@@ -100,7 +111,9 @@ def test_response_matching_and_missing(store):
 def test_schema_version_rejected(store):
     run = demo(store)
     with store.connect() as connection:
-        payload = json.loads(connection.execute("SELECT body FROM runs WHERE id=?", (run.id,)).fetchone()[0])
+        payload = json.loads(
+            connection.execute("SELECT body FROM runs WHERE id=?", (run.id,)).fetchone()[0]
+        )
         payload["schema_version"] = 999
         connection.execute("UPDATE runs SET body=? WHERE id=?", (json.dumps(payload), run.id))
     with pytest.raises(BlackboxError, match="schema"):
@@ -134,5 +147,9 @@ def test_model_capture_is_opt_in(store):
         with pytest.raises(BlackboxError, match="capture_models"):
             recorder.model("model", lambda: {})
     with Recorder("model", store=store, capture_models=True) as recorder:
-        recorder.model("fake", lambda **_: {"text": "ok", "usage": {"input_tokens": 3, "output_tokens": 1}}, input="hello")
+        recorder.model(
+            "fake",
+            lambda **_: {"text": "ok", "usage": {"input_tokens": 3, "output_tokens": 1}},
+            input="hello",
+        )
     assert store.load(recorder.run.id).events[0].usage["input_tokens"] == 3
