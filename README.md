@@ -6,11 +6,31 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A local recorder and replay debugger for tool-using AI workflows. Record nested calls, inspect their evidence, replace a response at a checkpoint, and compare the resulting decisions. Python, SQLite, and a browser. No hosted service or API key required for the demo.
+A local-first recorder and replay debugger for tool-using AI workflows. When an
+agent makes a surprising decision, Blackbox lets you inspect the evidence,
+replace one response at a checkpoint, replay the decision code, and compare the
+result. It is designed for AI platform engineers who need reproducible
+debugging without turning every investigation into a live production incident.
+
+The core is framework-neutral: explicit workflow contracts make replay
+conservative and testable, while direct recording works with ordinary Python
+tools. Python, SQLite, and a browser are enough for the demo; no hosted service
+or API key is required.
 
 ![The debugger showing a recorded inventory investigation](docs/overview.jpg)
 
-## Quickstart (30 Seconds)
+## Why this exists
+
+Tool-using workflows are difficult to debug because the final answer is often
+the least useful artifact. The important question is which tool response,
+retrieved document, model output, or stale value changed the decision. Blackbox
+preserves that evidence and makes a controlled intervention reproducible.
+
+This project intentionally favors inspectability over throughput: each event is
+durable before and after execution, replay has no live fallback, and incompatible
+workflow or trace versions fail explicitly.
+
+## Quickstart (60 Seconds)
 
 With Python 3.11+ and Git installed, in an activated virtual environment:
 
@@ -22,7 +42,18 @@ blackbox demo
 blackbox serve
 ```
 
-Open **http://127.0.0.1:8765**. Select the recorded run, inspect `inventory.lookup`, then choose **Create fork and compare**. The corrected response is prefilled. Initial dependency downloads may take longer than 30 seconds.
+Open **http://127.0.0.1:8765**. Select the recorded run, inspect
+`inventory.lookup`, then choose **Create fork and compare**. The corrected
+response is prefilled. The complete CLI-only path, including artifact
+generation, is:
+
+```bash
+python examples/capture_demo.py
+cat .blackbox/demo/comparison.json
+```
+
+The browser is an optional inspection surface; the reproducible behavior is
+also available entirely through the CLI.
 
 | Evidence | Original run | Forked run |
 | --- | --- | --- |
@@ -32,6 +63,11 @@ Open **http://127.0.0.1:8765**. Select the recorded run, inspect `inventory.look
 | External purchases issued | None | None |
 
 The included agent is a deterministic decision workflow that deliberately trusts stale inventory. It demonstrates a failure you can reproduce exactly; it does not pretend to be an autonomous model.
+
+**What the demo proves:** the original decision is preserved, one evidence
+response can be replaced at a checkpoint, the workflow runs again without live
+callbacks, and the structural difference is reported. It does not claim that a
+model is deterministic or that replay is a sandbox.
 
 ## Three execution modes
 
@@ -86,6 +122,10 @@ with Recorder("inventory-investigation") as recorder:
 Use `async with Recorder(...)` and `await recorder.acall(...)` for async tools. Context-local parent spans isolate concurrent asyncio tasks. Await all child tasks before exiting the recorder. Arguments and results must be JSON-serializable; tool return values are passed through unchanged while persisted snapshots are redacted.
 
 [Workflow integration](docs/integration.md) explains checkpoints, registration, and the replay contract. [Trace format](docs/trace-format.md) documents the versioned JSON export.
+
+For the design rationale and boundaries, see [architecture](docs/architecture.md),
+[security and threat model](docs/threat-model.md), and
+[design decisions](docs/design-decisions.md).
 
 ## Optional real-model recording
 
@@ -150,3 +190,17 @@ python -m build
 CI tests Python 3.11-3.13 on Linux and Windows, builds the distribution, and installs the wheel into a separate environment to verify CLI and packaged browser assets.
 
 Read the [architecture](docs/architecture.md), [troubleshooting](docs/troubleshooting.md), and [contributing guide](CONTRIBUTING.md). MIT licensed. Created by [Mel Goldstein](https://melgoldstein.com/).
+
+## Engineering roadmap
+
+The next high-value extensions are deliberately narrow:
+
+1. Add optional exporters that can coexist with OpenTelemetry rather than
+   replacing it.
+2. Add another example workflow through the same explicit adapter contract.
+3. Keep expanding crash, concurrency, and trace-compatibility tests before
+   adding framework-specific integrations.
+
+Out of scope for the core package: hosted multi-tenancy, arbitrary process
+recovery, automatic framework instrumentation, and a security boundary around
+untrusted workflow code.
